@@ -3,7 +3,7 @@ import os  # Read environment variables.
 import json  # Encode JSON payloads.
 import urllib.error  # Handle HTTP errors.
 import urllib.request  # Make HTTP requests.
-
+from createprompt import get_prompt  # Load prompt from a separate module.
 #print(os.environ)
 key_before = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_TOKEN")  # Check shell env first.
 load_dotenv(override=False)  # Don't override existing shell env vars.
@@ -18,9 +18,14 @@ if not key:
     print("GROQ_API_KEY not set")  # Missing key message.
     raise SystemExit(1)  # Stop the script if no key.
 
+prompt = get_prompt()  # Read prompt from createprompt.py.
+if not prompt:
+    print("No prompt provided")
+    raise SystemExit(1)
+
 payload = {  # Minimal chat request body.
     "model": "llama-3.1-8b-instant",  # Groq model ID.
-    "messages": [{"role": "user", "content": "What is one plus one?"}],  # Test prompt.
+    "messages": [{"role": "user", "content": prompt}],  # User prompt.
 }
 req = urllib.request.Request(
     "https://api.groq.com/openai/v1/chat/completions",  # Groq chat endpoint.
