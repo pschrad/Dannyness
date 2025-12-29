@@ -1,50 +1,50 @@
-import os
-import json
-import urllib.error
-import urllib.request
+from dotenv import load_dotenv  # Load .env files (requires python-dotenv).
+import os  # Read environment variables.
+import json  # Encode JSON payloads.
+import urllib.error  # Handle HTTP errors.
+import urllib.request  # Make HTTP requests.
 
-key_before = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_TOKEN")
-try:
-    from dotenv import load_dotenv
+#print(os.environ)
+key_before = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_TOKEN")  # Check shell env first.
+load_dotenv(override=False)  # Don't override existing shell env vars.
 
-    load_dotenv(override=False)
-except Exception:
-    pass
-
-key = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_TOKEN")
+key = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_API_TOKEN")  # Read the API key.
 if key:
     if key_before:
-        print("using GROQ_API_KEY from shell env")
+        print("using GROQ_API_KEY from shell env")  # Let the user know the source.
     else:
-        print("using GROQ_API_KEY from .env")
+        print("using GROQ_API_KEY from .env")  # Let the user know the source.
 if not key:
-    print("GROQ_API_KEY not set")
-    raise SystemExit(1)
+    print("GROQ_API_KEY not set")  # Missing key message.
+    raise SystemExit(1)  # Stop the script if no key.
 
-payload = {
-    "model": "llama-3.1-8b-instant",
-    "messages": [{"role": "user", "content": "hi"}],
+payload = {  # Minimal chat request body.
+    "model": "llama-3.1-8b-instant",  # Groq model ID.
+    "messages": [{"role": "user", "content": "What is one plus one?"}],  # Test prompt.
 }
 req = urllib.request.Request(
-    "https://api.groq.com/openai/v1/chat/completions",
-    data=json.dumps(payload).encode("utf-8"),
+    "https://api.groq.com/openai/v1/chat/completions",  # Groq chat endpoint.
+    data=json.dumps(payload).encode("utf-8"),  # JSON-encode the payload.
     headers={
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "User-Agent": "curl/8.0",
+        "Authorization": f"Bearer {key}",  # Attach the API key.
+        "Content-Type": "application/json",  # Send JSON.
+        "User-Agent": "curl/8.0",  # Avoid Cloudflare 1010 blocks.
     },
 )
 
 try:
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    with urllib.request.urlopen(req, timeout=10) as resp:  # Send the request.
         if resp.status == 200:
-            print("success: Groq API key works")
+            data = json.loads(resp.read().decode("utf-8"))  # Parse JSON response.
+            content = data["choices"][0]["message"]["content"]  # Extract reply text.
+            print("success: Groq API key works")  # Success path.
+            print(content)  # Print the model reply.
         else:
-            print(resp.status)
+            print(resp.status)  # Non-200 status.
 except urllib.error.HTTPError as exc:
-    body = exc.read().decode("utf-8", errors="replace")
-    print(exc.code)
+    body = exc.read().decode("utf-8", errors="replace")  # Read error body.
+    print(exc.code)  # Print HTTP error status code.
     if body:
-        print(body)
+        print(body)  # Print error details when available.
 except Exception as exc:
-    print(f"error: {exc}")
+    print(f"error: {exc}")  # Catch-all for unexpected errors.
